@@ -1,328 +1,132 @@
 # Secure Messenger - Backend
 
-A secure messenger backend with end-to-end encryption, built in Go for Ubuntu Server.
+A highly secure messenger backend implementing end-to-end encryption with Zero-Knowledge Architecture, built in Go for Ubuntu Server.
 
-## Features
+## Key Features
 
-- **End-to-End Encryption**: Full E2E encryption using Signal Protocol (X25519, Ed25519, AES-256-GCM)
-- **Microservices Architecture**: Scalable and maintainable service-oriented design
-- **Real-time Messaging**: WebSocket-based instant message delivery
-- **File Sharing**: Encrypted file transfer up to 100MB
-- **Group Chats**: Support for group conversations with up to 200 members
+- **End-to-End Encryption**: Robust E2E encryption integrating the Signal Protocol guidelines (X3DH, Double Ratchet, X25519, Ed25519, AES-256-GCM).
+- **Scalable Microservices Architecture**: Decoupled, maintainable service-oriented design containerized for peak performance.
+- **Real-time Messaging**: High-availability WebSocket-based instant message delivery scaling horizontally with NATS JetStream.
+- **Secure File Sharing**: Fully encrypted file transfer scaling up to 100MB object sizes mapping to MinIO.
+- **Group Chats**: Strong P2P and Group chats supporting up to 200 members per room.
 
-## Architecture
+## Project Documentation
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      API Gateway (:8080)                     │
-│                   (Routing, Rate Limiting)                   │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-    ┌─────────────────┼─────────────────┬─────────────────────┐
-    │                 │                 │                     │
-    ▼                 ▼                 ▼                     ▼
-┌────────┐     ┌──────────┐     ┌──────────┐          ┌──────────┐
-│  Auth  │     │   Key    │     │ Message  │          │   File   │
-│Service │     │ Service  │     │ Service  │          │ Service  │
-│ :8081  │     │  :8084   │     │  :8082   │          │  :8083   │
-└───┬────┘     └────┬─────┘     └────┬─────┘          └────┬─────┘
-    │               │                │                     │
-    └───────────────┴────────────────┴─────────────────────┘
-                           │
-    ┌──────────────────────┼──────────────────────────────┐
-    │                      │                              │
-    ▼                      ▼                              ▼
-┌────────┐          ┌──────────┐                   ┌──────────┐
-│Postgres│          │   NATS   │                   │  MinIO   │
-│   16   │          │ JetStream│                   │  S3-like │
-└────────┘          └──────────┘                   └──────────┘
-```
+Detailed system specifications are located in the `documentation/` directory:
+- [Architecture & System Overview](documentation/architecture.md)
+- [API Specifications & Authentication](documentation/api.md)
+- [Cryptographic Protocol Implementation](documentation/crypto.md)
+- [Database Schema structure](documentation/database.md)
 
-## Services
+## Microservices Catalog
 
 | Service | Port | Description |
 |---------|------|-------------|
-| API Gateway | 8080 | Entry point, routing, rate limiting |
-| Auth Service | 8081 | Authentication, JWT tokens |
-| Key Service | 8084 | Cryptographic key management |
-| Message Service | 8082 | Real-time messaging, WebSocket |
-| File Service | 8083 | Encrypted file storage |
-
-## Quick Start
-
-### Prerequisites
-
-- Go 1.22+
-- Docker & Docker Compose
-- Make (optional)
-
-### Using Docker Compose
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Local Development
-
-```bash
-# Install dependencies
-go mod download
-
-# Start infrastructure
-docker-compose up -d postgres redis nats minio
-
-# Run migrations (automatic on first start)
-
-# Start services
-go run ./cmd/auth-service &
-go run ./cmd/key-service &
-go run ./cmd/message-service &
-go run ./cmd/file-service &
-go run ./cmd/api-gateway
-```
-
-## API Endpoints
-
-### Authentication (`/api/v1/auth`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /register | Register new user |
-| POST | /login | Authenticate user |
-| POST | /refresh | Refresh access token |
-| POST | /logout | Invalidate session |
-
-### Keys (`/api/v1/keys`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /identity | Upload identity key |
-| GET | /identity/{user_id} | Get user's identity key |
-| POST | /signed-prekey | Upload signed prekey |
-| GET | /bundle/{user_id} | Get prekey bundle for X3DH |
-| POST | /one-time-prekeys | Upload one-time prekeys |
-
-### Messages (`/api/v1`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /conversations | Create conversation |
-| GET | /conversations/{id}/messages | Get message history |
-| WS | /ws | WebSocket connection |
-
-### Files (`/api/v1/files`)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /upload | Upload encrypted file |
-| GET | /{id} | Download file |
-| GET | /{id}/info | Get file metadata |
-
-## Cryptographic Protocol
-
-The messenger implements Signal Protocol for E2E encryption:
-
-1. **X3DH Key Exchange**: Initial session establishment
-2. **Double Ratchet**: Ongoing message encryption with forward secrecy
-3. **AES-256-GCM**: Symmetric encryption for messages
-4. **Ed25519**: Digital signatures for authentication
-5. **X25519**: Diffie-Hellman key agreement
-
-### Key Hierarchy
-
-```
-Identity Keys (Ed25519)
-    │
-    ├── Signed Prekeys (X25519)
-    │
-    ├── One-Time Prekeys (X25519)
-    │
-    └── Session Keys
-            │
-            ├── Root Key (HKDF-SHA256)
-            │
-            └── Chain Key → Message Keys (AES-256-GCM)
-```
-
-## Configuration
-
-Configuration is managed via `config.yaml` and environment variables:
-
-```yaml
-server:
-  port: 8080
-
-database:
-  host: localhost
-  port: 5432
-  user: messenger
-  password: messenger_secret
-  database: messenger_db
-
-jwt:
-  access_token_secret: your-secret-key
-  refresh_token_secret: your-refresh-secret
-  access_token_expiry: 15m
-  refresh_token_expiry: 720h
-```
-
-Environment variables override YAML settings:
-- `SERVER_PORT`
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
-
-## Database Schema
-
-The PostgreSQL database contains the following main tables:
-
-- `users` - User accounts
-- `identity_keys` - Long-term identity keys
-- `signed_prekeys` - Signed prekeys for X3DH
-- `one_time_prekeys` - One-time prekeys
-- `conversations` - Chat rooms
-- `conversation_members` - Membership relations
-- `messages` - Encrypted messages
-- `files` - File metadata
-
-## Security Considerations
-
-1. **Zero-Knowledge Server**: All encryption happens client-side
-2. **Forward Secrecy**: Compromised keys don't expose past messages
-3. **Key Rotation**: Automatic key rotation with Double Ratchet
-4. **No Plaintext Storage**: Messages and files stored encrypted
-5. **Token-Based Auth**: JWT with short-lived access tokens
-
-## Deployment
-
-### Kubernetes
-
-Kubernetes manifests are available in `deployments/k8s/`:
-
-```bash
-kubectl apply -f deployments/k8s/
-```
-
-### Production Checklist
-
-- [ ] Change all default secrets
-- [ ] Enable TLS/SSL
-- [ ] Configure rate limiting
-- [ ] Set up monitoring (Prometheus/Grafana)
-- [ ] Configure log aggregation
-- [ ] Enable PostgreSQL SSL
-- [ ] Set up database backups
-- [ ] Configure MinIO replication
-
-## Development
-
-### Project Structure
-
-```
-secure-messenger/
-├── cmd/                    # Service entry points
-│   ├── api-gateway/
-│   ├── auth-service/
-│   ├── key-service/
-│   ├── message-service/
-│   └── file-service/
-├── internal/               # Private packages
-│   ├── config/
-│   ├── crypto/
-│   ├── database/
-│   ├── middleware/
-│   ├── models/
-│   └── protocol/
-├── pkg/                    # Public packages
-├── deployments/            # Deployment configs
-│   ├── docker/
-│   └── k8s/
-└── scripts/               # Utility scripts
-```
-
-### Running Tests
-
-```bash
-go test ./... -v
-```
-
-## License
-
-MIT License - see LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+| API Gateway | 8080 | Entry point, HTTP/WS routing, rate limiting |
+| Auth Service | 8081 | Identity management, Session JWT tokens (Argon2id hashes) |
+| Key Service | 8084 | Cryptographic public key repository handling |
+| Message Service | 8082 | Event-driven real-time messaging, WebSocket persistence |
+| File Service | 8083 | Encrypted object file storage linked to MinIO |
 
 ---
 
-## 📖 Подробная инструкция по установке на Ubuntu Server
+## 🚀 Complete Ubuntu Server Deployment Guide
 
-Полная пошаговая инструкция по развёртыванию на Ubuntu Server 24.04 LTS доступна в PDF-документе.
+The following instructions comprehensively walk through deploying the Secure Messenger to an **Ubuntu Server (24.04 LTS or newer)** entirely from scratch using Docker Compose.
 
-### Краткий quickstart для Ubuntu
-
+### Step 1: System Preparation and Updates
+First, ensure your base Ubuntu packages are fully up-to-date and install the required core utilities.
 ```bash
-# 1. Обновление системы
 sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git jq openssl
+```
 
-# 2. Установка Docker
+### Step 2: Install Docker & Docker Compose
+The entire microservice ecosystem relies heavily on container orchestration via Docker. Install the latest engine directly from Docker's official script.
+```bash
+# Fetch and run the official Docker installation script
 curl -fsSL https://get.docker.com | sh
+
+# Add your current user to the docker group to avoid requiring 'sudo'
 sudo usermod -aG docker $USER
+
+# Apply the group change directly to your current shell session
 newgrp docker
 
-# 3. Клонирование репозитория
+# Verify the installation was successful
+docker --version
+docker compose version
+```
+
+### Step 3: Clone the Repository
+Pull the secure-messenger source code to your target deployment directory (e.g., your home folder or `/opt/`).
+```bash
 git clone https://github.com/harriedgemusic/secure-messenger.git
 cd secure-messenger
+```
 
-# 4. Создание файла переменных окружения
-cat > .env << 'EOF'
+### Step 4: Configure Environment Variables
+You must securely generate the secret keys, passwords, and tokens required by PostgreSQL, MinIO, and the Auth Service (JWT). Run the following block to auto-generate a `.env` file populated with cryptographically secure random values:
+
+```bash
+cat > .env << EOF
+# Auto-generated secrets
 DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
 JWT_ACCESS_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
 JWT_REFRESH_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
 MINIO_ROOT_PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
 EOF
 
-# Замените плейсхолдеры на реальные значения:
-sed -i "s/\$(openssl rand -base64 32 | tr -d '\/+=' | head -c 32)/$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)/g" .env
-sed -i "s/\$(openssl rand -base64 48 | tr -d '\/+=' | head -c 64)/$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)/g" .env
-sed -i "s/\$(openssl rand -base64 24 | tr -d '\/+=' | head -c 24)/$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)/g" .env
+# Ensure appropriate read-write limits are kept tight
+chmod 600 .env
+```
+*(Optional) Review the generated secrets using `cat .env` before proceeding.*
 
-# 5. Запуск всех сервисов
+### Step 5: Bootstrapping and Launch
+With secrets generated, invoke Docker Compose to download images, build the Go microservices locally, and establish the custom networks & volumes.
+```bash
+# Build and dynamically spawn all containers in detached mode
 docker compose up -d --build
+```
+This deploys:
+- PostgreSQL 16 (Relational schemas automatically migrating on boot)
+- Redis (Session Caching layer)
+- NATS JetStream (Pub/Sub message broker)
+- MinIO (Local encrypted object file store)
+- `api-gateway`, `auth-service`, `key-service`, `message-service`, `file-service`
 
-# 6. Проверка работоспособности
+### Step 6: Verify Deployment and Health Status
+Double check that all dependent services are `running` without restarting cycles.
+```bash
+docker compose ps
+```
+Ping the API Gateway's healthcheck endpoint:
+```bash
 curl http://localhost:8080/health
-# Ожидаемый ответ: {"status":"healthy","timestamp":"..."}
+# Expected Output format: {"status":"healthy","timestamp":"..."}
+```
 
-# 7. Тестовая регистрация пользователя
+### Step 7: Test E2E Operability
+Create a test user account to confirm your database, gateway routing, and authentication service are fully integrated:
+```bash
 curl -X POST http://localhost:8080/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","email":"test@example.com","password":"TestPass123!"}'
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "SuperSecretPassword123!"
+  }'
 ```
 
-### Управление сервисами
+### Service Management Cheat Sheet
+- **View all Application Logs:** `docker compose logs -f`
+- **View specific Service Logs (e.g. gateway):** `docker compose logs -f api-gateway`
+- **Restart the whole stack:** `docker compose restart`
+- **Stop services and remove containers (Keep Volumes):** `docker compose down`
+- **Nuke Everything (Containers, Networks, and VOLUMES/DATA):** `docker compose down -v`
 
-```bash
-# Просмотр статуса
-docker compose ps
+---
 
-# Просмотр логов
-docker compose logs -f
+## License
 
-# Остановка сервисов
-docker compose down
-
-# Перезапуск
-docker compose restart
-```
+MIT License - see LICENSE file for details.
