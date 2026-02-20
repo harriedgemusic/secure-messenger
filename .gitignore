@@ -1,0 +1,74 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Build artifacts
+*.o
+*.a
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Config with secrets (keep template)
+config.local.yaml
+secrets.yaml
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Test coverage
+*.out
+coverage.txt
+coverage.html
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes secrets
+*.secret.yaml
+secrets/
+
+# Data volumes (if mounted locally)
+data/
+postgres-data/
+redis-data/
+minio-data/
+nats-data/
+
+# Debug
+debug
+__debug_bin*
