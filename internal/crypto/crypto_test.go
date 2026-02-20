@@ -146,3 +146,47 @@ func TestX25519DH(t *testing.T) {
 		t.Error("Expected shared secrets to match")
 	}
 }
+
+func TestDeriveKey(t *testing.T) {
+	secret := []byte("my-secret")
+	salt := []byte("my-salt")
+	info := []byte("my-info")
+
+	key, err := DeriveKey(secret, salt, info, 32)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(key) != 32 {
+		t.Fatalf("expected key length 32, got %d", len(key))
+	}
+}
+
+func TestGenerateNonce(t *testing.T) {
+	nonce, err := GenerateNonce()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(nonce) != NonceSize {
+		t.Fatalf("expected nonce length %d, got %d", NonceSize, len(nonce))
+	}
+}
+
+func TestCryptoEdgeCases(t *testing.T) {
+	// AESGCMEncrypt invalid key size
+	_, _, err := AESGCMEncrypt([]byte("short"), []byte("data"), nil)
+	if err != ErrInvalidKeySize {
+		t.Errorf("expected ErrInvalidKeySize, got %v", err)
+	}
+
+	// AESGCMDecrypt invalid key size
+	_, err = AESGCMDecrypt([]byte("short"), []byte("data"), []byte("nonce"), nil)
+	if err != ErrInvalidKeySize {
+		t.Errorf("expected ErrInvalidKeySize, got %v", err)
+	}
+
+	// DH invalid key size
+	_, err = DH([]byte("short"), []byte("short"))
+	if err != ErrInvalidKeySize {
+		t.Errorf("expected ErrInvalidKeySize, got %v", err)
+	}
+}

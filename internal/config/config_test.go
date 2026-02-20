@@ -147,3 +147,21 @@ database:
 		t.Errorf("Expected DB host 'localhost', got %q", cfg.Database.Host)
 	}
 }
+
+func TestLoadConfigError(t *testing.T) {
+	_, err := Load("non_existent_file.yaml")
+	if err == nil {
+		t.Error("expected error loading non existent file")
+	}
+
+	// create invalid yaml
+	f, _ := os.CreateTemp("", "invalid.yaml")
+	defer os.Remove(f.Name())
+	f.Write([]byte("invalid: yaml: content:"))
+	f.Close()
+
+	_, err = Load(f.Name())
+	if err == nil {
+		t.Error("expected error loading invalid yaml")
+	}
+}
