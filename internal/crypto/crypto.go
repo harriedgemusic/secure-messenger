@@ -80,13 +80,16 @@ func VerifyPassword(password string, storedHash []byte) (bool, error) {
 	return subtleCompare(hash, expectedHash), nil
 }
 
-// GenerateKeyPair generates an X25519 key pair for DH key exchange
 func GenerateKeyPair() (publicKey, privateKey []byte, error error) {
-	publicKey, privateKey, err := curve25519.GenerateKey(rand.Reader)
+	priv := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, priv); err != nil {
+		return nil, nil, err
+	}
+	pub, err := curve25519.X25519(priv, curve25519.Basepoint)
 	if err != nil {
 		return nil, nil, err
 	}
-	return publicKey[:], privateKey[:], nil
+	return pub, priv, nil
 }
 
 // GenerateSigningKeyPair generates an Ed25519 key pair for signing

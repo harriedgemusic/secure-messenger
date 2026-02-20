@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/secure-messenger/internal/config"
@@ -19,9 +18,9 @@ import (
 )
 
 type KeyService struct {
-	config   *config.Config
-	db       *database.Database
-	keyRepo  *database.KeyRepository
+	config  *config.Config
+	db      *database.Database
+	keyRepo *database.KeyRepository
 }
 
 func main() {
@@ -94,8 +93,8 @@ func main() {
 }
 
 type UploadIdentityKeyRequest struct {
-	PublicKey  []byte `json:"public_key"`
-	Signature  []byte `json:"signature"`
+	PublicKey []byte `json:"public_key"`
+	Signature []byte `json:"signature"`
 }
 
 type UploadSignedPreKeyRequest struct {
@@ -163,10 +162,10 @@ func (s *KeyService) GetIdentityKey(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.APIResponse{
 		Status: "success",
 		Data: map[string]interface{}{
-			"user_id":     ik.UserID,
-			"public_key":  ik.PublicKey,
-			"signature":   ik.Signature,
-			"created_at":  ik.CreatedAt,
+			"user_id":    ik.UserID,
+			"public_key": ik.PublicKey,
+			"signature":  ik.Signature,
+			"created_at": ik.CreatedAt,
 		},
 	})
 }

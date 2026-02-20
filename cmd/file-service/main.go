@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -28,10 +27,10 @@ const (
 )
 
 type FileService struct {
-	config    *config.Config
-	db        *database.Database
-	fileRepo  *database.FileRepository
-	minio     *minio.Client
+	config   *config.Config
+	db       *database.Database
+	fileRepo *database.FileRepository
+	minio    *minio.Client
 }
 
 func main() {
@@ -114,15 +113,15 @@ func main() {
 }
 
 type UploadInitRequest struct {
-	Filename     []byte `json:"filename"`      // Encrypted filename
+	Filename     []byte `json:"filename"` // Encrypted filename
 	Size         int64  `json:"size"`
 	ContentType  []byte `json:"content_type"`  // Encrypted content type
 	EncryptedKey []byte `json:"encrypted_key"` // File key encrypted with session key
 }
 
 type UploadInitResponse struct {
-	UploadID string `json:"upload_id"`
-	ChunkSize int   `json:"chunk_size"`
+	UploadID  string `json:"upload_id"`
+	ChunkSize int    `json:"chunk_size"`
 }
 
 func (s *FileService) UploadFile(w http.ResponseWriter, r *http.Request) {
@@ -172,9 +171,9 @@ func (s *FileService) UploadFile(w http.ResponseWriter, r *http.Request) {
 	fileRecord := &models.File{
 		ID:           uuid.New().String(),
 		UploaderID:   userID,
-		Filename:     encryptedFilename,
+		Filename:     string(encryptedFilename),
 		Size:         header.Size,
-		ContentType:  encryptedContentType,
+		ContentType:  string(encryptedContentType),
 		StorageKey:   storageKey,
 		EncryptedKey: encryptedKey,
 	}

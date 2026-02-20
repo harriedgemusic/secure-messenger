@@ -22,9 +22,9 @@ import (
 )
 
 type AuthService struct {
-	config     *config.Config
-	db         *database.Database
-	userRepo   *database.UserRepository
+	config   *config.Config
+	db       *database.Database
+	userRepo *database.UserRepository
 }
 
 func main() {
@@ -155,7 +155,7 @@ func (s *AuthService) Register(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: passwordHash,
+		PasswordHash: string(passwordHash),
 		IsActive:     true,
 	}
 
@@ -205,7 +205,7 @@ func (s *AuthService) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify password
-	valid, err := crypto.VerifyPassword(req.Password, user.PasswordHash)
+	valid, err := crypto.VerifyPassword(req.Password, []byte(user.PasswordHash))
 	if err != nil || !valid {
 		sendError(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -352,11 +352,11 @@ func (s *AuthService) generateAccessToken(userID string) (string, error) {
 func (s *AuthService) generateRefreshToken(userID string) (string, error) {
 	now := time.Now()
 	claims := jwt.MapClaims{
-		"sub": userID,
-		"iat": now.Unix(),
-		"exp": now.Add(s.config.JWT.RefreshTokenExpiry).Unix(),
-		"iss": s.config.JWT.Issuer,
-		"jti": uuid.New().String(),
+		"sub":  userID,
+		"iat":  now.Unix(),
+		"exp":  now.Add(s.config.JWT.RefreshTokenExpiry).Unix(),
+		"iss":  s.config.JWT.Issuer,
+		"jti":  uuid.New().String(),
 		"type": "refresh",
 	}
 
