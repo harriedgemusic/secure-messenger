@@ -1,0 +1,46 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 15s
+  write_timeout: 15s
+  shutdown_timeout: 10s
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "messenger"
+  password: "messenger_secret"
+  database: "messenger_db"
+  ssl_mode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+nats:
+  url: "nats://localhost:4222"
+  cluster: "messenger-cluster"
+  client_id: "messenger-server"
+
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  use_ssl: false
+  bucket: "messenger-files"
+
+jwt:
+  access_token_secret: "production-access-secret-change-me"
+  refresh_token_secret: "production-refresh-secret-change-me"
+  access_token_expiry: 15m
+  refresh_token_expiry: 720h
+  issuer: "secure-messenger"
+
+logging:
+  level: "info"
+  format: "json"

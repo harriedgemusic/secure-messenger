@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./api-gateway"]
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=messenger
+      - DB_PASSWORD=messenger_secret
+      - DB_NAME=messenger_db
+      - JWT_ACCESS_SECRET=production-access-secret-change-me
+      - JWT_REFRESH_SECRET=production-refresh-secret-change-me
+    depends_on:
+      - postgres
+      - redis
+      - nats
+      - minio
+    networks:
+      - messenger-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./auth-service"]
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=messenger
+      - DB_PASSWORD=messenger_secret
+      - DB_NAME=messenger_db
+      - JWT_ACCESS_SECRET=production-access-secret-change-me
+      - JWT_REFRESH_SECRET=production-refresh-secret-change-me
+    depends_on:
+      - postgres
+    networks:
+      - messenger-network
+
+  # Key Service
+  key-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./key-service"]
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVER_PORT=8084
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=messenger
+      - DB_PASSWORD=messenger_secret
+      - DB_NAME=messenger_db
+      - JWT_ACCESS_SECRET=production-access-secret-change-me
+    depends_on:
+      - postgres
+    networks:
+      - messenger-network
+
+  # Message Service
+  message-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./message-service"]
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=messenger
+      - DB_PASSWORD=messenger_secret
+      - DB_NAME=messenger_db
+      - JWT_ACCESS_SECRET=production-access-secret-change-me
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - messenger-network
+
+  # File Service
+  file-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./file-service"]
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=messenger
+      - DB_PASSWORD=messenger_secret
+      - DB_NAME=messenger_db
+      - JWT_ACCESS_SECRET=production-access-secret-change-me
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - messenger-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=messenger
+      - POSTGRES_PASSWORD=messenger_secret
+      - POSTGRES_DB=messenger_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U messenger -d messenger_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - messenger-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - messenger-network
+
+  # NATS Message Broker
+  nats:
+    image: nats:2-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--http_port", "8222", "--jetstream"]
+    volumes:
+      - nats-data:/data
+    networks:
+      - messenger-network
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - messenger-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+  minio-data:
+
+networks:
+  messenger-network:
+    driver: bridge

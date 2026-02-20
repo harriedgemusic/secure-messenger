@@ -34,6 +34,13 @@ Detailed system specifications are located in the `documentation/` directory:
 
 The following instructions comprehensively walk through deploying the Secure Messenger to an **Ubuntu Server (24.04 LTS or newer)** entirely from scratch using Docker Compose.
 
+### System Requirements
+- **OS**: Ubuntu 22.04 LTS or 24.04 LTS (Recommended)
+- **CPU**: 2+ Cores
+- **RAM**: 4GB+ (8GB+ Recommended for production)
+- **Storage**: 20GB+ SSD (Depending on expected file storage needs via MinIO)
+- **Network**: Reserved ports `8080`, `8081`, `8082`, `8083`, `8084`, `5432`, `6379`, `4222`, `8222`, `9000`, `9001`
+
 ### Step 1: System Preparation and Updates
 First, ensure your base Ubuntu packages are fully up-to-date and install the required core utilities.
 ```bash
@@ -65,25 +72,20 @@ git clone https://github.com/harriedgemusic/secure-messenger.git
 cd secure-messenger
 ```
 
-### Step 4: Configure Environment Variables
-You must securely generate the secret keys, passwords, and tokens required by PostgreSQL, MinIO, and the Auth Service (JWT). Run the following block to auto-generate a `.env` file populated with cryptographically secure random values:
+### Step 4: Configure via Interactive Setup Script
+Configure your environment variables, database credentials, and cryptographic keys using the interactive `setup.sh` script. This script automatically updates `docker-compose.yml` and `config.yaml` with your custom or auto-generated values:
 
 ```bash
-cat > .env << EOF
-# Auto-generated secrets
-DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
-JWT_ACCESS_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
-JWT_REFRESH_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
-MINIO_ROOT_PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
-EOF
+# Make the setup script executable
+chmod +x setup.sh
 
-# Ensure appropriate read-write limits are kept tight
-chmod 600 .env
+# Run the interactive configuration setup
+./setup.sh
 ```
-*(Optional) Review the generated secrets using `cat .env` before proceeding.*
+*(Note: You can press ENTER to accept the default values for a quick local test, or provide your own secure passwords and usernames for a production environment.)*
 
 ### Step 5: Bootstrapping and Launch
-With secrets generated, invoke Docker Compose to download images, build the Go microservices locally, and establish the custom networks & volumes.
+With configurations updated, invoke Docker Compose to download images, build the Go microservices locally, and establish the custom networks & volumes.
 ```bash
 # Build and dynamically spawn all containers in detached mode
 docker compose up -d --build
