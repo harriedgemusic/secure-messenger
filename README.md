@@ -263,3 +263,66 @@ MIT License - see LICENSE file for details.
 3. Commit your changes
 4. Push to the branch
 5. Open a Pull Request
+
+---
+
+## 📖 Подробная инструкция по установке на Ubuntu Server
+
+Полная пошаговая инструкция по развёртыванию на Ubuntu Server 24.04 LTS доступна в PDF-документе.
+
+### Краткий quickstart для Ubuntu
+
+```bash
+# 1. Обновление системы
+sudo apt update && sudo apt upgrade -y
+
+# 2. Установка Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# 3. Клонирование репозитория
+git clone https://github.com/harriedgemusic/secure-messenger.git
+cd secure-messenger
+
+# 4. Создание файла переменных окружения
+cat > .env << 'EOF'
+DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
+JWT_ACCESS_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
+JWT_REFRESH_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)
+MINIO_ROOT_PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
+EOF
+
+# Замените плейсхолдеры на реальные значения:
+sed -i "s/\$(openssl rand -base64 32 | tr -d '\/+=' | head -c 32)/$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)/g" .env
+sed -i "s/\$(openssl rand -base64 48 | tr -d '\/+=' | head -c 64)/$(openssl rand -base64 48 | tr -d '/+=' | head -c 64)/g" .env
+sed -i "s/\$(openssl rand -base64 24 | tr -d '\/+=' | head -c 24)/$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)/g" .env
+
+# 5. Запуск всех сервисов
+docker compose up -d --build
+
+# 6. Проверка работоспособности
+curl http://localhost:8080/health
+# Ожидаемый ответ: {"status":"healthy","timestamp":"..."}
+
+# 7. Тестовая регистрация пользователя
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"TestPass123!"}'
+```
+
+### Управление сервисами
+
+```bash
+# Просмотр статуса
+docker compose ps
+
+# Просмотр логов
+docker compose logs -f
+
+# Остановка сервисов
+docker compose down
+
+# Перезапуск
+docker compose restart
+```
